@@ -1,6 +1,8 @@
 #lang racket
 
 (require
+  "../lib/helpers.rkt"
+  threading
   racket/file)
 
 (define (solve-p1 fname) 0)
@@ -12,8 +14,8 @@
     rackunit
     rackunit/text-ui)
 
+  (define input-file "../test_inputs/day_{{DAY}}.txt")
   (define suite
-    (define input-file "../test_inputs/day_{{DAY}}.txt")
     (test-suite "day {{DAY}} tests"
                 (test-equal?
                   "part 1 with sample input"
