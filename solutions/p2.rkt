@@ -21,9 +21,10 @@
 (define (solve-p1 fname)
   (define bag (list 12 13 14))
 
+  (define (bag-can-contain colors)
+    (andmap >= bag colors))
+
   (define (value-from-line line)
-    (define (bag-can-contain colors)
-      (andmap >= bag colors))
     (let ([game-num (string->number (car (regexp-match #rx"[0-9]+" line)))])
       (~>> line
            parse-game-info
