@@ -7,17 +7,18 @@
   racket/file
   racket/set)
 
-(define (symbol-locations-from-line line-number line)
+(define (symbol-locations-from-line line-number symbol-regexp line)
   (~>> line
-       (regexp-match-positions* #rx"[^0-9.]")
+       (regexp-match-positions* symbol-regexp)
        (or _ '())
        (map car)
        (map (lambda (x) (cons x line-number)))))
 
-(define (get-symbol-locations fname)
+(define (get-symbol-locations fname symbol-regexp)
   (~>> fname
        file->lines
-       (enumerate symbol-locations-from-line)
+       (enumerate (lambda (line-number line)
+                    (symbol-locations-from-line line-number symbol-regexp line)))
        (apply append)
        (map (lambda (x) (cons x '())))
        make-hash))
@@ -33,38 +34,41 @@
  ;; this will use hash-has-key? instead of set-member?
   (some (lambda (neighbor) (hash-has-key? symbol-map neighbor)) neighbors))
 
+(define (visit-number symbol-map line-number location-and-value)
+  (for ([n (get-number-neighbors line-number (car location-and-value))])
+    (when (hash-has-key? symbol-map n)
+      (hash-update! symbol-map n (lambda (items) (cons (cdr location-and-value) items))))))
+
 (define (part-numbers-from-line symbol-map line-number line)
-  ;; todo rewrite without state
-  ;; maybe thread number+location as a pair/list
-  (let* ([number-positions (regexp-match-positions* #rx"[0-9]+" line)]
-  [number-positions (or number-positions '())]
-  [number-positionsx (filter (lambda (number-position)
-    (neighbors-in-symbol-map (get-number-neighbors line-number number-position) symbol-map)) number-positions)]
-    ;; logic somewhere to add the number to the hash set
-              [numstrings (map (lambda (pos) (substring line (car pos) (cdr pos))) number-positionsx)]
-              [nums (map string->number numstrings)]
-              )
-              nums))
-  ; (~>> line
-  ;      (regexp-match-positions* #rx"[0-9]+")
-  ;      (or _ '())
-  ;      (map (lambda (number-start-and-end)
-  ;             (get-number-neighbors line-number number-start-and-end)))
-  ;      (filter (lambda (neighbors) (neighbors-in-symbol-map neighbors symbol-map)))
-  ;      (apply append)
-  ;      (print-and-return)
-  ;      (map (lambda (start-end) (substring line (car start-end) (cdr start-end))))
-  ;      ))
+  (~>> line
+       ;; grab the list of all number positions.
+       (regexp-match-positions* #rx"[0-9]+")
+       (or _ '())
+
+       ;; map each number position construct to its value.
+       (map (lambda (number-start-and-end)
+              (cons number-start-and-end
+                    (string->number
+                      (substring line
+                                 (car number-start-and-end)
+                                 (cdr number-start-and-end))))))
+
+       ;; update the hash table.
+       (map (lambda (x) (visit-number symbol-map line-number x))))
+  (~>> symbol-map
+       hash-values
+       (apply append)
+       remove-duplicates))
 
 (define (solve-p1 fname) 
-  (let ([symbol-map (get-symbol-locations fname)])
+  (let ([symbol-map (get-symbol-locations fname #rx"[^0-9.]")])
     (~>> fname
          file->lines
          (enumerate (lambda (i line)
            (part-numbers-from-line symbol-map i line)))
          (apply append)
-         (apply +)
-         )))
+         remove-duplicates
+         (apply +))))
 
 (define (solve-p2 fname) 0)
 
