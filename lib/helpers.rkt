@@ -10,11 +10,7 @@
   (andmap fn items))
 
 (define (some fn items)
-  (if (null? items)
-    #f
-    (or (fn (car items))
-        (some fn (cdr items)))))
-  ; (ormap fn items))
+  (ormap fn items))
 
 (define (first-of-list-or items-or-false alternate)
   (or

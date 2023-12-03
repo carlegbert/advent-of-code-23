@@ -52,12 +52,15 @@
 
        (map (lambda (x) (visit-number symbol-map line-number x)))))
 
+(define (visit-symbol-map symbol-map fname)
+  (~>> fname
+       file->lines
+       (enumerate (lambda (i line)
+                    (visit-line symbol-map i line)))))
+
 (define (solve-p1 fname) 
   (let ([symbol-map (get-symbol-locations fname #rx"[^0-9.]")])
-    (~>> fname
-         file->lines
-         (enumerate (lambda (i line)
-                      (visit-line symbol-map i line))))
+    (visit-symbol-map symbol-map fname)
     (~>> symbol-map
          hash-values
          (apply append)
@@ -66,10 +69,7 @@
 
 (define (solve-p2 fname)
   (let ([symbol-map (get-symbol-locations fname #rx"[^0-9.]")])
-    (~>> fname
-         file->lines
-         (enumerate (lambda (i line)
-                      (visit-line symbol-map i line))))
+    (visit-symbol-map symbol-map fname)
     (~>> symbol-map
          hash-values
          (filter (lambda (nums)
