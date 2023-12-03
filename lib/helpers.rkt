@@ -2,10 +2,19 @@
 
 (provide
   every
-  first-regexp-match-or)
+  some
+  first-regexp-match-or
+  enumerate)
 
 (define (every fn items)
   (andmap fn items))
+
+(define (some fn items)
+  (if (null? items)
+    #f
+    (or (fn (car items))
+        (some fn (cdr items)))))
+  ; (ormap fn items))
 
 (define (first-of-list-or items-or-false alternate)
   (or
@@ -17,3 +26,11 @@
     (if matches
       (car matches)
       alternate)))
+
+(define (enumerate fn items)
+  (define (iter _items idx)
+    (if (null? _items)
+      '()
+      (cons (fn idx (car _items))
+            (iter (cdr _items) (add1 idx)))))
+  (iter items 0))
