@@ -31,7 +31,6 @@
         (cons x y)))))
 
 (define (neighbors-in-symbol-map neighbors symbol-map)
- ;; this will use hash-has-key? instead of set-member?
   (some (lambda (neighbor) (hash-has-key? symbol-map neighbor)) neighbors))
 
 (define (visit-number symbol-map line-number location-and-value)
@@ -39,13 +38,11 @@
     (when (hash-has-key? symbol-map n)
       (hash-update! symbol-map n (lambda (items) (cons (cdr location-and-value) items))))))
 
-(define (part-numbers-from-line symbol-map line-number line)
+(define (visit-line symbol-map line-number line)
   (~>> line
-       ;; grab the list of all number positions.
        (regexp-match-positions* #rx"[0-9]+")
        (or _ '())
 
-       ;; map each number position construct to its value.
        (map (lambda (number-start-and-end)
               (cons number-start-and-end
                     (string->number
@@ -53,24 +50,32 @@
                                  (car number-start-and-end)
                                  (cdr number-start-and-end))))))
 
-       ;; update the hash table.
-       (map (lambda (x) (visit-number symbol-map line-number x))))
-  (~>> symbol-map
-       hash-values
-       (apply append)
-       remove-duplicates))
+       (map (lambda (x) (visit-number symbol-map line-number x)))))
 
 (define (solve-p1 fname) 
   (let ([symbol-map (get-symbol-locations fname #rx"[^0-9.]")])
     (~>> fname
          file->lines
          (enumerate (lambda (i line)
-           (part-numbers-from-line symbol-map i line)))
+                      (visit-line symbol-map i line))))
+    (~>> symbol-map
+         hash-values
          (apply append)
          remove-duplicates
          (apply +))))
 
-(define (solve-p2 fname) 0)
+(define (solve-p2 fname)
+  (let ([symbol-map (get-symbol-locations fname #rx"[^0-9.]")])
+    (~>> fname
+         file->lines
+         (enumerate (lambda (i line)
+                      (visit-line symbol-map i line))))
+    (~>> symbol-map
+         hash-values
+         (filter (lambda (nums)
+                   (= (length nums) 2)))
+         (map (lambda (n) (apply * n)))
+         (apply +))))
 
 (module+ test
   (require
@@ -87,7 +92,7 @@
                 (test-equal?
                   "part 2 with sample input"
                   (solve-p2 input-file)
-                  0)))
+                  467835)))
 
   (run-tests suite))
 
