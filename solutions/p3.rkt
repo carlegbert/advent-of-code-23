@@ -2,10 +2,8 @@
 
 (require
   "../lib/helpers.rkt"
-  "../lib/debugging.rkt"
   threading
-  racket/file
-  racket/set)
+  racket/file)
 
 (define (symbol-locations-from-line line-number symbol-regexp line)
   (~>> line
