@@ -12,7 +12,10 @@
   list-of
   print-and-return
   default
-  add-uneven-lists)
+  add-uneven-lists
+  string-counter
+  translate
+  hash-pop)
 
 (define (print-and-return x)
   (display x)
@@ -63,3 +66,25 @@
   (if (null? item)
     fallback
     (fn item)))
+
+(define (string-counter s)
+  (let ([hmap (make-hash)]
+        [chars (string->list s)])
+    (for/list ([char chars])
+      (hash-update! hmap char add1 0))
+    hmap))
+
+(define (translate s original translation)
+  (let* ([original (string->list original)]
+         [translation (string->list translation)]
+         [mappings (map cons original translation)]
+         [h (make-hash mappings)])
+    (~>> s
+         string->list
+         (map (lambda (c) (hash-ref h c c)))
+         (apply string))))
+
+(define (hash-pop . args)
+  (let ([val (apply hash-ref args)])
+    (hash-remove! (car args) (cadr args))
+    val))

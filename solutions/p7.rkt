@@ -8,96 +8,47 @@
 
 (struct hand (cards bid))
 
-(define (parse-hand line)
+(define (parse-hand translation line)
   (let* ([parts (string-split line)]
          [bid (string->number (cadr parts))])
-    (hand (car parts) bid)))
+    (hand (~> parts
+               car
+               (translate "TJQKA" translation))
+          bid)))
 
-(define (filter-jacks-if-wild wild cards)
-  (if wild
-    (filter (lambda (card) (not (equal? card #\J))) cards)
-    cards))
+(define (get-matches hand)
+  (let* ([counts (~>> hand hand-cards string-counter)]
+         [wildcards (hash-pop counts #\0 0)]
+         [matches (~>> counts
+                      hash-values
+                      (sort _ >))]
+         [matches (if (null? matches) '(0) matches)])
+    (cons (+ (car matches) wildcards)
+          (cdr matches))))
 
-(define (get-matches hand wild)
-  (~>> hand
-       hand-cards
-       string->list
-       (filter-jacks-if-wild wild)
-       (sort _ char<?)
-       (map string)
-       (string-join _ "")
-       (regexp-match* #px"(.)\\1+")
-       (map (lambda~> string->list length))
-       (sort _ <)))
-
-(define (wildcards hand)
-  (~>> hand
-       hand-cards
-       (regexp-match* #rx"J")
-       length))
-
-(define (upgrade-hand-strength hand-strength wildcards)
-  (cond [(= wildcards 5) '(5)]
-        [(= wildcards 0) hand-strength]
-        [else (upgrade-hand-strength
-                (match hand-strength
-                  ['(4) '(5)]
-                  ['(3) '(4)]
-                  ['(2 2) '(3 2)]
-                  ['(2) '(3)]
-                  ['() '(2)])
-                (sub1 wildcards))]))
-
-(define (score hand wild)
-  (let* ([matches (get-matches hand wild)]
-        [wildcard-count (if wild (wildcards hand) 0)]
-        [matches (upgrade-hand-strength matches wildcard-count)])
+(define (score hand)
+  (let* ([matches (get-matches hand)])
     (match matches
       ['(5) 10]
-      ['(4) 9]
+      ['(4 1) 9]
       ['(3 2) 8]
-      ['(2 3) 8]
-      ['(3) 7]
-      ['(2 2) 6]
-      ['(2) 5]
-      ['() 0])))
+      ['(3 1 1) 7]
+      ['(2 2 1) 6]
+      ['(2 1 1 1) 5]
+      ['(1 1 1 1 1) 0])))
 
-(define (card->score card wild)
-  (match card
-    [#\J (if wild 0 11)]
+(define (tiebreak-lt hand-a hand-b)
+  (if (equal? (car hand-a) (car hand-b))
+    (tiebreak-lt (cdr hand-a) (cdr hand-b))
+    (char<? (car hand-a) (car hand-b))))
 
-    [#\1 1]
-    [#\2 2]
-    [#\3 3]
-    [#\4 4]
-    [#\5 5]
-    [#\6 6]
-    [#\7 7]
-    [#\8 8]
-    [#\9 9]
-    [#\T 10]
-    [#\Q 12]
-    [#\K 13]
-    [#\A 14]))
-
-(define (tiebreak-lt hand-a hand-b wild)
-  (let ([a-score (card->score (car hand-a) wild)]
-        [b-score (card->score (car hand-b) wild)])
-    (if (= a-score b-score)
-      (tiebreak-lt (cdr hand-a) (cdr hand-b) wild)
-      (< a-score b-score))))
-
-(define (hand-lt a b [wild #f])
-  (let ([a-score (score a wild)]
-        [b-score (score b wild)])
+(define (hand-lt a b)
+  (let ([a-score (score a)]
+        [b-score (score b)])
     (cond [(< a-score b-score) #t]
           [(> a-score b-score) #f]
           [else (tiebreak-lt (string->list (hand-cards a))
-                             (string->list (hand-cards b))
-                             wild)])))
-
-(define (hand-lt-wild a b)
-  (hand-lt a b #t))
+                             (string->list (hand-cards b)))])))
 
 (define (calculate-winnings hands)
   (define (iter hands rank)
@@ -110,17 +61,17 @@
 (define (solve-p1 fname)
   (~>> fname
        file->lines
-       (map parse-hand)
+       (map (lambda~>> (parse-hand "BCDEF")))
        (sort _ hand-lt)
-       (calculate-winnings)
+       calculate-winnings
        (apply +)))
 
 (define (solve-p2 fname)
   (~>> fname
        file->lines
-       (map parse-hand)
-       (sort _ hand-lt-wild)
-       (calculate-winnings)
+       (map (lambda~>> (parse-hand "B0DEF")))
+       (sort _ hand-lt)
+       calculate-winnings
        (apply +)))
 
 (module+ test
