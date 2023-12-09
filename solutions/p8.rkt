@@ -19,22 +19,27 @@
       (car val)
       (cadr val))))
 
+(define (path-length hmap instructions start end-matcher)
+  (define (iter pos moves instruction-cursor)
+    (if (end-matcher pos)
+      moves
+      (iter
+        (map-get hmap pos (car instruction-cursor))
+        (add1 moves)
+        (if (null? (cdr instruction-cursor))
+          instructions
+          (cdr instruction-cursor)))))
+  (iter start 0 instructions))
+
 (define (solve-p1 fname)
   (let* ([lines (file->lines fname)]
         [instructions (~> lines car string->list)]
         [hmap (build-map (cddr lines))])
-    (define (iter pos moves instruction-cursor)
-      (display pos)
-      (newline)
-      (if (equal? pos "ZZZ")
-        moves
-        (iter
-          (map-get hmap pos (car instruction-cursor))
-          (add1 moves)
-          (if (null? (cdr instruction-cursor))
-            instructions
-            (cdr instruction-cursor)))))
-    (iter "AAA" 0 instructions)))
+    (path-length
+      hmap
+      instructions
+      "AAA"
+      (lambda (pos) (equal? pos "ZZZ")))))
 
 (define (solve-p2 fname) 0)
 
