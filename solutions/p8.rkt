@@ -9,7 +9,7 @@
 (define (build-map lines)
   (let* ([hmap (make-hash)])
     (for/list ([line lines])
-      (let ([parts (regexp-match* #rx"[A-Z]+" line)])
+      (let ([parts (regexp-match* #rx"[0-9A-Z]+" line)])
         (hash-set! hmap (car parts) (cdr parts))))
     hmap))
 
@@ -41,7 +41,20 @@
       "AAA"
       (lambda (pos) (equal? pos "ZZZ")))))
 
-(define (solve-p2 fname) 0)
+(define (3rd-char-matches s c)
+  (~> s (string-ref 2) (equal? c)))
+
+(define (solve-p2 fname)
+  (let* ([lines (file->lines fname)]
+         [instructions (~> lines car string->list)]
+         [hmap (build-map (cddr lines))]
+         [end-matcher (lambda~> (3rd-char-matches #\Z))])
+    (~>> hmap
+         hash-keys
+         (filter (lambda~> (3rd-char-matches #\A)))
+         (map (lambda~>
+                (path-length hmap instructions _ end-matcher)))
+         (apply lcm))))
 
 (module+ test
   (require
@@ -50,6 +63,7 @@
 
   (define input-file "../test_inputs/day_8.txt")
   (define input-file-b "../test_inputs/day_8_b.txt")
+  (define input-file-c "../test_inputs/day_8_c.txt")
   (define suite
     (test-suite "day 8 tests"
                 (test-equal?
@@ -64,8 +78,8 @@
 
                 (test-equal?
                   "part 2 with sample input"
-                  (solve-p2 input-file)
-                  0)))
+                  (solve-p2 input-file-c)
+                  6)))
 
   (run-tests suite))
 

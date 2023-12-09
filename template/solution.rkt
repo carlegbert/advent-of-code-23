@@ -3,7 +3,8 @@
 (require
   "../lib/helpers.rkt"
   threading
-  racket/file)
+  racket/file
+  racket/trace)
 
 (define (solve-p1 fname) 0)
 
