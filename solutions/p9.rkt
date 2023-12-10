@@ -22,31 +22,19 @@
         (cons new-level (iter new-level)))))
   (cons starting-level (iter starting-level)))
 
-(define (get-new-pyramid-corner pyramid)
-  (let* ([this-level (car pyramid)]
-         [this-level (reverse this-level)]
-         [next-level (cadr pyramid)]
-         [next-level (reverse next-level)]
-         [next-block (+ (car this-level) (car next-level))])
-    (if (null? (cddr pyramid))
-      next-block
-      (let* ([updated-next-level (cons next-block next-level)]
-             [updated-next-level (reverse updated-next-level)]
-             [subsequent-levels (cddr pyramid)]
-             [updated-pyramid (cons updated-next-level subsequent-levels)])
-        (get-new-pyramid-corner updated-pyramid)))))
-
 (define (parse-line line)
   (~>> line
-      (regexp-match* #rx"[-0-9]+")
-      (map string->number)))
+       (regexp-match* #rx"[-0-9]+")
+       (map string->number)))
 
 (define (solve-p1 fname)
   (~>> fname
        file->lines
        (map (lambda~>> parse-line
                        build-pyramid
-                       get-new-pyramid-corner))
+                       (map reverse)
+                       (map car)
+                       (foldr (lambda (item acc) (+ item acc)) 0)))
        (apply +)))
 
 
