@@ -49,7 +49,15 @@
                        get-new-pyramid-corner))
        (apply +)))
 
-(define (solve-p2 fname) 0)
+
+(define (solve-p2 fname)
+  (~>> fname
+       file->lines
+       (map (lambda~>> parse-line
+                       build-pyramid
+                       (map car)
+                       (foldr (lambda (item acc) (- item acc)) 0)))
+       (apply +)))
 
 (module+ test
   (require
@@ -67,7 +75,7 @@
                 (test-equal?
                   "part 2 with sample input"
                   (solve-p2 input-file)
-                  0)))
+                  2)))
 
   (run-tests suite))
 
