@@ -37,13 +37,29 @@
          [string-parts (~> parts car (string-split #px"\\.+"))])
     (combos string-parts nums (make-hash))))
 
+(define (combos-per-line-p2 line)
+  (let* ([parts (string-split line)]
+         [nums (~> parts cadr (string-split ",") (map string->number _))]
+         [many-nums (~>> 5 range (map (lambda (x) nums)) flatten)]
+         [string-parts (~>> 5
+                           range
+                           (map (lambda (x) (car parts)))
+                           (string-join _ "?")
+                           (string-split _ #px"\\.+"))])
+    (combos string-parts many-nums (make-hash))))
+
 (define (solve-p1 fname)
   (~>> fname
       file->lines
       (map combos-per-line)
       (apply +)))
 
-(define (solve-p2 fname) 0)
+(define (solve-p2 fname)
+  (~>> fname
+      file->lines
+      (map combos-per-line-p2)
+      (apply +)))
+
 
 (module+ test
   (require
@@ -60,7 +76,7 @@
                 (test-equal?
                   "part 2 with sample input"
                   (solve-p2 input-file)
-                  0)))
+                  525152)))
 
   (run-tests suite))
 

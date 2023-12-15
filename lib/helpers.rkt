@@ -15,7 +15,10 @@
   add-uneven-lists
   string-counter
   translate
-  hash-pop)
+  hash-pop
+  index-of
+  replace-first
+  car-or)
 
 (define (print-and-return x)
   (display x)
@@ -88,3 +91,18 @@
   (let ([val (apply hash-ref args)])
     (hash-remove! (car args) (cadr args))
     val))
+
+(define (index-of items x [i 0])
+  (cond [(null? items) #f]
+        [(equal? (car items) x) i]
+        [else (index-of (cdr items) (add1 i))]))
+
+(define (replace-first items x replacement)
+  (if (equal? (car items) x)
+    (cons replacement (cdr items))
+    (cons (car x) (replace-first (cdr items) x replacement))))
+
+(define (car-or item alt)
+  (if (null? item)
+    alt
+    (car item)))

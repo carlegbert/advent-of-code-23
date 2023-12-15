@@ -6,9 +6,11 @@
   racket/file
   racket/trace)
 
-(define (solve-p1 fname) 0)
+(define (solve-p1 fname)
+  0)
 
-(define (solve-p2 fname) 0)
+(define (solve-p2 fname)
+  0)
 
 (module+ test
   (require
