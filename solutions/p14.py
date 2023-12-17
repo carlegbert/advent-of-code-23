@@ -1,4 +1,3 @@
-import re
 import sys
 import unittest
 
@@ -41,10 +40,42 @@ class Grid:
             new_col = roll_boulders(col)
             self.set_col(i, new_col)
 
+    def roll_west(self) -> None:
+        for i, row in enumerate(self.rows):
+            new_row = roll_boulders(row)
+            self.set_row(i, new_row)
+
+    def roll_south(self) -> None:
+        for i, col in enumerate(self.cols):
+            col.reverse()
+            new_col = roll_boulders(col)
+            new_col.reverse()
+            self.set_col(i, new_col)
+
+    def roll_east(self) -> None:
+        for i, row in enumerate(self.rows):
+            row.reverse()
+            new_row = roll_boulders(row)
+            new_row.reverse()
+            self.set_row(i, new_row)
+
+    def cycle(self) -> None:
+        self.roll_north()
+        self.roll_west()
+        self.roll_south()
+        self.roll_east()
+
+
     def calculate_load(self) -> int:
         return sum([
             column_load(col)
             for col in self.cols
+        ])
+
+    def serialize(self) -> tuple[int, ...]:
+        return tuple([
+            row_to_int(row)
+            for row in self.rows
         ])
 
     def print(self) -> None:
@@ -52,6 +83,12 @@ class Grid:
         for row in self.rows:
             print("".join(row))
         print("----------")
+
+
+def row_to_int(row: list[str]) -> int:
+    s = "".join(row)
+    s = s.replace(".", "0").replace("#", "0").replace("O", "1")
+    return int(s, 2)
 
 
 def get_grid(fname: str) -> Grid:
@@ -78,15 +115,33 @@ def column_load(col: list[str]) -> int:
 
 def solve_p1(fname: str) -> int:
     grid = get_grid(fname)
-    grid.print()
     grid.roll_north()
-    grid.print()
 
     return grid.calculate_load()
 
 
 def solve_p2(fname: str) -> int:
-    return 0
+    CYCLE_AMOUNT = 1000000000
+
+    grid = get_grid(fname)
+    cycles = 0
+    repetition_detector: dict[tuple[int, ...], int] = {}
+    while cycles < CYCLE_AMOUNT:
+        key = grid.serialize()
+        if key in repetition_detector:
+            repetition_length = cycles - repetition_detector[key]
+            cycles_remaining = CYCLE_AMOUNT - cycles
+            cycles_remaining %= repetition_length
+            for _ in range(cycles_remaining):
+                grid.cycle()
+            return grid.calculate_load()
+        else:
+            repetition_detector[key] = cycles
+
+            grid.cycle()
+            cycles += 1
+
+    return grid.calculate_load()
 
 
 class TestCase(unittest.TestCase):
