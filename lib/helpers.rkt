@@ -8,6 +8,7 @@
   some
   first-regexp-match-or
   enumerate
+  enumerated
   not-zero
   list-of
   print-and-return
@@ -50,13 +51,22 @@
             (iter (cdr _items) (add1 idx)))))
   (iter items 0))
 
+(define (enumerated items)
+  (define (iter x idx)
+    (if (null? x)
+      '()
+      (cons
+        (cons idx (car x))
+        (iter (cdr x) (add1 idx)))))
+  (iter items 0))
+
 (define (not-zero n)
   (not (= 0 n)))
 
 (define (list-of size val)
   (~>> size
-      range
-      (map (lambda (x) val))))
+       range
+       (map (lambda (x) val))))
 
 (define (add-uneven-lists a b)
   (cond [(null? a) b]

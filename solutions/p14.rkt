@@ -6,26 +6,25 @@
   racket/file
   racket/trace)
 
-(define (column-load col)
-  (define (iter item running-load current-load idx)
-    (cond [(null? item)
-           running-load]
-          [(equal? #\O (car item))
-           (iter (cdr item)
-                 (+ current-load running-load)
-                 (sub1 current-load)
-                 (sub1 idx))]
-          [(equal? #\# (car item))
-           (iter (cdr item)
-                 running-load
-                 (sub1 idx)
-                 (sub1 idx))]
-          [else (iter (cdr item)
-                 running-load
-                 current-load
-                 (sub1 idx))]))
+(define (roll-boulders col)
+  (~>> col
+       list->string
+       (string-split _ "#" #:trim? #f)
+       (map string->list)
+       (map (lambda~> (sort (lambda (a b) (equal? a #\O)))))
+       (map list->string)
+       (string-join _ "#")
+       string->list))
+
+(define (load col)
   (define len (length col))
-  (iter col 0 len len))
+  (foldl
+    (lambda (item acc)
+      (if (equal? #\O (cdr item))
+        (+ acc (- len (car item)))
+        acc))
+    0
+    (enumerated col)))
 
 (define (flip-grid grid)
   (define (iter x)
@@ -41,9 +40,10 @@
 
 (define (solve-p1 fname)
   (~>> fname
-      file->cols
-      (map column-load)
-      (apply +)))
+       file->cols
+       (map roll-boulders)
+       (map load)
+       (apply +)))
 
 (define (solve-p2 fname)
   0)
@@ -57,14 +57,14 @@
   (define suite
     (test-suite "day 14 tests"
                 (test-equal?
-                 "part 1 with sample input"
-                 (solve-p1 input-file)
-                 136)
+                  "part 1 with sample input"
+                  (solve-p1 input-file)
+                  136)
 
                 (test-equal?
-                 "part 2 with sample input"
-                 (solve-p2 input-file)
-                 0)))
+                  "part 2 with sample input"
+                  (solve-p2 input-file)
+                  64)))
 
   (run-tests suite))
 
