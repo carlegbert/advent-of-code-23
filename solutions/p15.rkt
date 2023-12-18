@@ -3,8 +3,7 @@
 (require
   "../lib/helpers.rkt"
   threading
-  racket/file
-  racket/trace)
+  racket/file)
 
 (define (hash-char c current-value)
   (~> c
@@ -16,6 +15,49 @@
 (define (hash-str s)
   (foldl hash-char 0 (string->list s)))
 
+(struct lens-config
+  ;; The - action will be
+  ;; encoded as val=#f.
+  (s hashkey val)
+  #:transparent)
+
+(define (list-update-item items pred new-val)
+  (cond [(null? items) (cons new-val '())]
+        [(pred (car items))
+         (cons new-val (cdr items))]
+        [else (cons (car items)
+                    (list-update-item (cdr items) pred new-val))]))
+
+(define (make-lens-config s)
+  (let* ([parts (regexp-match #px"([a-z]+)[-=]([1-9]*)" s)]
+         [s (cadr parts)]
+         [hashkey (hash-str s)]
+         [val (string->number (caddr parts))])
+    (lens-config s hashkey val)))
+
+(define (process-lens-config ht lc)
+  (hash-update!
+    ht (lens-config-hashkey lc)
+    (lambda (items)
+      (if (lens-config-val lc)
+        (list-update-item
+          items
+          (lambda (x) (equal? (lens-config-s x) (lens-config-s lc)))
+          lc)
+        (filter (lambda (x) (not (equal? (lens-config-s x)
+                                         (lens-config-s lc))))
+                items)))
+    '()))
+
+(define (focusing-power lens-box)
+  (~>> lens-box
+       (enumerate
+         (lambda (i lc)
+           (* (add1 (lens-config-hashkey lc))
+              (add1 i)
+              (lens-config-val lc))))
+       (apply +)))
+
 (define (solve-p1 s)
   (~>> s
        (string-split _ ",")
@@ -24,7 +66,17 @@
        (apply +)))
 
 (define (solve-p2 fname)
-  0)
+  (let* ([ht (make-hash)])
+    (~>> fname
+         file->string
+         (string-split _ ",")
+         (map string-trim)
+         (map make-lens-config)
+         (map (lambda~>> (process-lens-config ht))))
+    (~>> ht
+         hash-values
+         (map focusing-power)
+         (apply +))))
 
 (module+ test
   (require
@@ -47,7 +99,7 @@
                 (test-equal?
                   "part 2 with sample input"
                   (solve-p2 input-file)
-                  0)))
+                  145)))
 
   (run-tests suite))
 
