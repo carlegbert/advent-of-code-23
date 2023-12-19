@@ -3,8 +3,7 @@
 (require
   "../lib/helpers.rkt"
   threading
-  racket/file
-  racket/trace)
+  racket/file)
 
 (define (file->grid fname)
   (~>> fname file->lines (map string->list) (map list->vector) list->vector))
@@ -64,9 +63,16 @@
            (list (move-beam beam "L"))]
           [else (list (move-beam beam d))])))
 
+(define (count-visited visited)
+  (~>> visited
+       set->list
+       (map (lambda (b) (cons (beam-x b) (beam-y b))))
+       list->set
+       set-count))
+
 (define (process-beams grid beams visited)
-              (let ([beam (car-or beams #f)])
-    (cond [(not beam) visited]
+  (let ([beam (car-or beams #f)])
+    (cond [(not beam) (count-visited visited)]
           [(outside-grid? beam grid)
            (process-beams grid (cdr beams) visited)]
           [(set-member? visited beam)
@@ -81,14 +87,25 @@
 (define (solve-p1 fname)
   (~>> fname
        file->grid
-       (process-beams _ (list (beam 0 0 "R")) (mutable-set))
-       set->list
-       (map (lambda (b) (cons (beam-x b) (beam-y b))))
-       list->set
-       set-count))
+       (process-beams _ (list (beam 0 0 "R")) (mutable-set))))
+
+(define (get-all-entrypoints grid)
+  (let ([height (vector-length grid)]
+        [width (vector-length (vector-ref grid 0))])
+    (append (map (lambda~> (beam _ 0 "D")) (range width))
+            (map (lambda~> (beam _ (sub1 height) "U")) (range width))
+            (map (lambda~> (beam 0 _ "R")) (range height))
+            (map (lambda~> (beam (sub1 width) _ "L")) (range height)))))
 
 (define (solve-p2 fname)
-  0)
+  (let ([grid (file->grid fname)])
+    (~>> grid
+         get-all-entrypoints
+         ;; memoization that lets us avoid taking the
+         ;; same path repeatedly is left as an exercise
+         ;; to the reader.
+         (map (lambda (x) (process-beams grid (list x) (mutable-set))))
+         (apply max))))
 
 (module+ test
   (require
@@ -102,10 +119,11 @@
                   "part 1 with sample input"
                   (solve-p1 input-file)
                   46)
+
                 (test-equal?
                   "part 2 with sample input"
                   (solve-p2 input-file)
-                  0)))
+                  51)))
 
   (run-tests suite))
 
